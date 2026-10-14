@@ -5,6 +5,13 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 $csrfToken = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
+require __DIR__ . '/db.php';
+require __DIR__ . '/site_content.php';
+ensureChatTable();
+$siteContent = loadSiteContent();
+$eventos = is_array($siteContent['eventos'] ?? null) ? $siteContent['eventos'] : [];
+$heroTitle = (string) ($siteContent['hero_title'] ?? 'Hay momentos<br>que merecen <em>todo.</em>');
+$heroText = (string) ($siteContent['hero_text'] ?? 'Imaginamos, planeamos y hacemos realidad encuentros que se quedan con vos para siempre.');
 ?>
 <!doctype html>
 <html lang="es">
@@ -39,8 +46,8 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow"><span></span> CELEBRACIONES CON HISTORIA</p>
-        <h1>Hay momentos<br>que merecen <em>todo.</em></h1>
-        <p class="hero-text">Imaginamos, planeamos y hacemos realidad encuentros que se quedan con vos para siempre.</p>
+        <h1><?= $heroTitle ?></h1>
+        <p class="hero-text"><?= $heroText ?></p>
         <div class="hero-actions"><a class="button button-dark" href="#solicitud">Empezá a imaginarlo <span aria-hidden="true">↗</span></a><a class="text-link" href="#eventos">Descubrí lo que hacemos <span aria-hidden="true">↓</span></a></div>
         <div class="hero-note"><span class="note-stars" aria-hidden="true">✳</span><span>Un equipo cerca tuyo,<br>desde la primera idea.</span></div>
       </div>
@@ -55,10 +62,13 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
       <div class="section-heading"><p class="eyebrow">MOMENTOS PARA CELEBRAR</p><h2>Tu motivo, <em>nuestro punto de partida.</em></h2></div>
       <p class="intro-copy">Cada celebración tiene su propio ritmo. Encontrá la inspiración y contanos qué tenés en mente.</p>
       <div class="event-grid">
-        <button class="event-card event-wedding" data-event="Casamiento"><span class="event-number">01</span><span class="event-card-content"><span class="event-label">PARA DECIR “SÍ”</span><strong>Casamientos</strong><span class="event-arrow" aria-hidden="true">↗</span></span></button>
-        <button class="event-card event-quinces" data-event="Cumpleaños de 15"><span class="event-number">02</span><span class="event-card-content"><span class="event-label">UNA NOCHE ÚNICA</span><strong>Fiestas de 15</strong><span class="event-arrow" aria-hidden="true">↗</span></span></button>
-        <button class="event-card event-social" data-event="Reunión social"><span class="event-number">03</span><span class="event-card-content"><span class="event-label">JUNTOS ES MEJOR</span><strong>Celebraciones</strong><span class="event-arrow" aria-hidden="true">↗</span></span></button>
-        <button class="event-card event-corporate" data-event="Evento corporativo"><span class="event-number">04</span><span class="event-card-content"><span class="event-label">ENCUENTROS CON PROPÓSITO</span><strong>Corporativos</strong><span class="event-arrow" aria-hidden="true">↗</span></span></button>
+        <?php foreach ($eventos as $index => $event): ?>
+          <?php $eventName = (string) ($event['name'] ?? ''); $eventLabel = (string) ($event['label'] ?? ''); $eventTitle = (string) ($event['title'] ?? ''); $eventImage = (string) ($event['image'] ?? ''); $eventClass = (string) ($event['class'] ?? ''); ?>
+          <button class="event-card <?= htmlspecialchars($eventClass, ENT_QUOTES, 'UTF-8') ?>" data-event="<?= htmlspecialchars($eventName, ENT_QUOTES, 'UTF-8') ?>" style="background-image:url('<?= htmlspecialchars($eventImage, ENT_QUOTES, 'UTF-8') ?>');">
+            <span class="event-number"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></span>
+            <span class="event-card-content"><span class="event-label"><?= htmlspecialchars($eventLabel, ENT_QUOTES, 'UTF-8') ?></span><strong><?= htmlspecialchars($eventTitle, ENT_QUOTES, 'UTF-8') ?></strong><span class="event-arrow" aria-hidden="true">↗</span></span>
+          </button>
+        <?php endforeach; ?>
       </div>
       <div class="event-types"><span>También celebramos</span><span>Cumpleaños infantiles</span><i>·</i><span>Aniversarios</span><i>·</i><span>Bautismos</span><i>·</i><span>Reuniones sociales</span></div>
     </section>
@@ -113,5 +123,22 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
     <section class="closing-banner"><div class="closing-mark" aria-hidden="true">H</div><p>LOS GRANDES MOMENTOS<br>EMPIEZAN CON UNA IDEA.</p><a href="#solicitud" aria-label="Empezar una propuesta">↗</a></section>
   </main>
   <footer class="site-footer"><a class="brand brand-footer" href="#inicio"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><span class="brand-name">horizonte<span>eventos</span></span></a><span>Celebraciones pensadas para vos.</span><a href="#inicio">Volver arriba ↑</a><small>© <?= date('Y') ?> Horizonte Eventos</small></footer>
+
+  <div class="chat-widget" aria-live="polite">
+    <button class="chat-toggle" type="button" aria-expanded="false" aria-controls="chat-panel">Chat de consultas <span>●</span></button>
+    <div class="chat-panel" id="chat-panel" hidden>
+      <div class="chat-header">
+        <strong>Consultas rápidas</strong>
+        <span>Respondemos en breve</span>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <form class="chat-form" id="chat-form">
+        <input type="text" name="name" placeholder="Tu nombre" maxlength="80" required>
+        <input type="email" name="email" placeholder="Tu email" maxlength="180" required>
+        <textarea name="message" rows="3" maxlength="1000" placeholder="Escribí tu duda..." required></textarea>
+        <button type="submit" class="button button-dark">Enviar mensaje</button>
+      </form>
+    </div>
+  </div>
 </body>
 </html>

@@ -82,8 +82,8 @@ $services = array_values(array_unique(array_filter(array_map(static fn ($value):
 
 $host = getenv('HORIZONTE_DB_HOST') ?: '127.0.0.1';
 $port = (int) (getenv('HORIZONTE_DB_PORT') ?: 3306);
-$database = getenv('HORIZONTE_DB_NAME') ?: '';
-$username = getenv('HORIZONTE_DB_USER') ?: '';
+$database = getenv('HORIZONTE_DB_NAME') ?: 'HE';
+$username = getenv('HORIZONTE_DB_USER') ?: 'root';
 $password = getenv('HORIZONTE_DB_PASSWORD') ?: '';
 if ($database === '' || $username === '') {
     respond(503, ['ok' => false, 'message' => 'El formulario todavía no está conectado. Probá más tarde o contactanos por los canales de la empresa.']);
