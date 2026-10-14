@@ -2,25 +2,11 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/app/bootstrap.php';
+
 function horizonteDb(): mysqli
 {
-    $host = getenv('HORIZONTE_DB_HOST') ?: '127.0.0.1';
-    $port = (int) (getenv('HORIZONTE_DB_PORT') ?: 3306);
-    $database = getenv('HORIZONTE_DB_NAME') ?: 'HE';
-    $username = getenv('HORIZONTE_DB_USER') ?: 'root';
-    $password = getenv('HORIZONTE_DB_PASSWORD') ?: '';
-
-    if ($database === '' || $username === '') {
-        throw new RuntimeException('Faltan credenciales de la base de datos.');
-    }
-
-    $db = new mysqli($host, $username, $password, $database, $port);
-    if ($db->connect_error) {
-        throw new RuntimeException('No se pudo conectar a la base de datos: ' . $db->connect_error);
-    }
-
-    $db->set_charset('utf8mb4');
-    return $db;
+    return \Horizonte\Core\Database::connection();
 }
 
 function ensureChatTable(): void

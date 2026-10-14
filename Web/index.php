@@ -38,6 +38,7 @@ $heroText = (string) ($siteContent['hero_text'] ?? 'Imaginamos, planeamos y hace
     <button class="menu-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="Abrir menú"><span></span><span></span></button>
     <nav class="main-nav" id="main-nav" aria-label="Navegación principal">
       <a href="#eventos">Eventos</a><a href="#espacios">Espacios</a><a href="#servicios">Servicios</a>
+      <a class="nav-login" href="login.php">Ingresar</a>
       <a class="nav-cta" href="#solicitud">Empezar mi propuesta <span aria-hidden="true">↗</span></a>
     </nav>
   </header>
