@@ -9,7 +9,8 @@ final class ChatRepository
 {
     public function ensureSchema(): void
     {
-        Database::connection()->query("CREATE TABLE IF NOT EXISTS chat_mensajes (
+        $connection = Database::connection();
+        $connection->query("CREATE TABLE IF NOT EXISTS chat_mensajes (
             id_mensaje INT UNSIGNED NOT NULL AUTO_INCREMENT,
             nombre VARCHAR(120) NOT NULL,
             email VARCHAR(180) NOT NULL,
@@ -25,7 +26,8 @@ final class ChatRepository
 
     public function all(): array
     {
-        $result = Database::connection()->query(
+        $connection = Database::connection();
+        $result = $connection->query(
             'SELECT id_mensaje, nombre, email, mensaje, es_admin, respuesta_a, creado_en FROM chat_mensajes ORDER BY creado_en ASC LIMIT 50'
         );
         return $result->fetch_all(MYSQLI_ASSOC);
@@ -33,13 +35,15 @@ final class ChatRepository
 
     public function recentForAdmin(): array
     {
-        $result = Database::connection()->query('SELECT * FROM chat_mensajes ORDER BY creado_en ASC');
+        $connection = Database::connection();
+        $result = $connection->query('SELECT * FROM chat_mensajes ORDER BY creado_en ASC');
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
     public function createClientMessage(string $name, string $email, string $message): void
     {
-        $statement = Database::connection()->prepare(
+        $connection = Database::connection();
+        $statement = $connection->prepare(
             'INSERT INTO chat_mensajes (nombre, email, mensaje, es_admin, respuesta_a, creado_en) VALUES (?, ?, ?, 0, NULL, NOW())'
         );
         $statement->bind_param('sss', $name, $email, $message);
@@ -51,7 +55,8 @@ final class ChatRepository
     {
         $adminName = 'Equipo Horizonte';
         $adminEmail = 'admin@horizonte.eventos';
-        $statement = Database::connection()->prepare(
+        $connection = Database::connection();
+        $statement = $connection->prepare(
             'INSERT INTO chat_mensajes (nombre, email, mensaje, es_admin, respuesta_a, creado_en) VALUES (?, ?, ?, 1, ?, NOW())'
         );
         $statement->bind_param('sssi', $adminName, $adminEmail, $message, $replyTo);

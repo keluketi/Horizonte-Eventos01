@@ -20,7 +20,8 @@ final class SubmissionRepository
         $surname = (string) $submission['apellido'];
         $email = (string) $submission['email'];
         $phone = (string) $submission['telefono'];
-        $statement = Database::connection()->prepare(
+        $connection = Database::connection();
+        $statement = $connection->prepare(
             'INSERT INTO solicitudes_web (tipo_evento, fecha_tentativa, horario, invitados, espacio_preferido, servicios, comentarios, nombre, apellido, email, telefono) '
             . 'VALUES (?, NULLIF(?, \'\'), NULLIF(?, \'\'), ?, NULLIF(?, \'\'), ?, NULLIF(?, \'\'), ?, ?, ?, NULLIF(?, \'\'))'
         );
@@ -35,13 +36,15 @@ final class SubmissionRepository
 
     public function recent(): array
     {
-        $result = Database::connection()->query('SELECT * FROM solicitudes_web ORDER BY fecha_creacion DESC LIMIT 50');
+        $connection = Database::connection();
+        $result = $connection->query('SELECT * FROM solicitudes_web ORDER BY fecha_creacion DESC LIMIT 50');
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
     public function updateStatus(int $id, string $status): void
     {
-        $statement = Database::connection()->prepare('UPDATE solicitudes_web SET estado = ? WHERE id_solicitud = ?');
+        $connection = Database::connection();
+        $statement = $connection->prepare('UPDATE solicitudes_web SET estado = ? WHERE id_solicitud = ?');
         $statement->bind_param('si', $status, $id);
         $statement->execute();
         $statement->close();

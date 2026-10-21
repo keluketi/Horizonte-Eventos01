@@ -14,7 +14,8 @@ final class AccountRepository
         $sql = 'SELECT e.id_empleado, e.nombre, e.apellido, e.email, e.cuil, e.password, e.id_rol, r.nombre_rol '
             . 'FROM empleados e INNER JOIN roles r ON r.id_rol = e.id_rol '
             . 'WHERE e.email = ? OR e.cuil = ? LIMIT 1';
-        $statement = Database::connection()->prepare($sql);
+        $connection = Database::connection();
+        $statement = $connection->prepare($sql);
         $statement->bind_param('ss', $identifier, $identifier);
         $statement->execute();
         $row = $statement->get_result()->fetch_assoc();
@@ -34,7 +35,8 @@ final class AccountRepository
 
     public function findClientByEmail(string $email): ?Client
     {
-        $statement = Database::connection()->prepare(
+        $connection = Database::connection();
+        $statement = $connection->prepare(
             'SELECT id_cliente, nombre, apellido, email, password FROM clientes WHERE email = ? LIMIT 1'
         );
         $statement->bind_param('s', $email);
@@ -58,7 +60,8 @@ final class AccountRepository
         $dni = (string) $data['dni_cuit'];
         $email = (string) $data['email'];
         $phone = (string) $data['telefono'];
-        $statement = Database::connection()->prepare(
+        $connection = Database::connection();
+        $statement = $connection->prepare(
             'INSERT INTO clientes (nombre, apellido, dni_cuit, email, telefono, password) '
             . 'VALUES (?, ?, ?, ?, NULLIF(?, \'\'), ?)'
         );
