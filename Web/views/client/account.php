@@ -14,7 +14,20 @@
     <section class="auth-card account-card" aria-labelledby="account-title">
       <p class="eyebrow">MI ESPACIO HORIZONTE</p><h1 id="account-title">Hola, <?= \Horizonte\Core\View::escape($name) ?> <em>✳</em></h1>
       <p class="auth-intro">Tu cuenta ya está conectada. Desde acá vamos a poder acercarte la información de tus consultas y eventos.</p>
-      <div class="account-note"><strong>Próximo paso</strong><p>Por ahora, podés empezar una propuesta desde el sitio y nuestro equipo te ayudará a darle forma.</p></div>
+      <div class="account-note"><strong>Seguimiento de tus propuestas</strong><p>Acá podés consultar el estado y las respuestas del equipo a tus solicitudes.</p></div>
+      <?php if ($requests !== []): ?>
+        <div class="client-request-list">
+          <?php foreach ($requests as $request): ?>
+            <article class="account-note">
+              <strong><?= \Horizonte\Core\View::escape((string) $request['tipo_evento']) ?> · <?= \Horizonte\Core\View::escape((string) ($request['estado'] ?? 'Pendiente')) ?></strong>
+              <p><?= \Horizonte\Core\View::escape((string) ($request['fecha_tentativa'] ?: 'Fecha a definir')) ?> · <?= (int) $request['invitados'] ?> invitados</p>
+              <?php if (!empty($request['respuesta_admin'])): ?><p><b>Mensaje del equipo:</b> <?= nl2br(\Horizonte\Core\View::escape((string) $request['respuesta_admin'])) ?></p><?php endif; ?>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      <?php else: ?>
+        <p class="auth-intro">Todavía no tenés propuestas registradas con este correo.</p>
+      <?php endif; ?>
       <a class="button button-dark auth-submit account-link" href="index.php#solicitud">Empezar una propuesta <span aria-hidden="true">↗</span></a>
       <a class="account-secondary" href="index.php">Volver al sitio</a>
     </section>

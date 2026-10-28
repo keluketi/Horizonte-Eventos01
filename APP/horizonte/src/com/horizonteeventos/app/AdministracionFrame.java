@@ -4,6 +4,7 @@ import com.horizonteeventos.dao.ClienteDAO;
 import com.horizonteeventos.dao.CatalogoEventoDAO;
 import com.horizonteeventos.dao.ConsultaModuloDAO;
 import com.horizonteeventos.dao.GestionFinancieraDAO;
+import com.horizonteeventos.dao.WebInboxDAO;
 import com.horizonteeventos.dao.impl.ClienteDAOImpl;
 import com.horizonteeventos.dao.impl.CatalogoEventoDAOImpl;
 import com.horizonteeventos.dao.impl.ConsultaModuloDAOImpl;
@@ -40,6 +41,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JTextArea;
+import javax.swing.JDialog;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
@@ -61,6 +64,7 @@ public class AdministracionFrame extends JFrame {
     private final CatalogoEventoDAO catalogoEventoDAO = new CatalogoEventoDAOImpl();
     private final ConsultaModuloDAO consultaDAO = new ConsultaModuloDAOImpl();
     private final GestionFinancieraDAO gestionFinancieraDAO = new GestionFinancieraDAOImpl();
+    private final WebInboxDAO webInboxDAO = new WebInboxDAO();
     private static final BigDecimal PORCENTAJE_SENA = new BigDecimal("20.00");
     private final CardLayout tarjetas = new CardLayout();
     private final JPanel contenido = new JPanel(tarjetas);
@@ -102,6 +106,8 @@ public class AdministracionFrame extends JFrame {
 
         contenido.add(crearInicio(), INICIO);
         contenido.add(crearPanelClientes(), "Clientes");
+        contenido.add(crearPanelChatWeb(), "Chat web");
+        contenido.add(crearPanelSolicitudesWeb(), "Solicitudes web");
         contenido.add(crearPanelPaquetes(), "Paquetes");
         agregarPanelConsulta("Presupuestos");
         agregarPanelConsulta("Eventos");
@@ -133,7 +139,7 @@ public class AdministracionFrame extends JFrame {
         JLabel nombreEmpresa = new JLabel("HORIZONTE EVENTOS");
         nombreEmpresa.setFont(new Font("Verdana", Font.BOLD, 18));
         nombreEmpresa.setForeground(AZUL_PRINCIPAL);
-        JLabel subtitulo = new JLabel("Sistema de Gestión · Panel de Administración");
+        JLabel subtitulo = new JLabel("Sistema de Gestión · Atención web y administración");
         subtitulo.setFont(new Font("Verdana", Font.PLAIN, 12));
         subtitulo.setForeground(new Color(105, 117, 130));
         textosMarca.add(nombreEmpresa);
@@ -173,6 +179,8 @@ public class AdministracionFrame extends JFrame {
 
         agregarBotonNav(navegacion, "Dashboard", INICIO);
         agregarBotonNav(navegacion, "Clientes", "Clientes");
+        agregarBotonNav(navegacion, "Chat de usuarios", "Chat web");
+        agregarBotonNav(navegacion, "Solicitudes web", "Solicitudes web");
         agregarBotonNav(navegacion, "Presupuestos", "Presupuestos");
         agregarBotonNav(navegacion, "Paquetes", "Paquetes");
         agregarBotonNav(navegacion, "Eventos", "Eventos");
@@ -365,6 +373,118 @@ public class AdministracionFrame extends JFrame {
         eliminar.addActionListener(e -> eliminarCliente());
         actualizar.addActionListener(e -> cargarClientes());
         return panel;
+    }
+
+    private JPanel crearPanelChatWeb() {
+        JPanel panel = crearPanelBase("Chat de usuarios", "Consultas recibidas desde el sitio web y respuestas del equipo");
+        DefaultTableModel modelo = new DefaultTableModel(new Object[] {"ID", "Cliente", "Email", "Mensaje", "Fecha"}, 0) {
+            private static final long serialVersionUID = 1L;
+            @Override public boolean isCellEditable(int fila, int columna) { return false; }
+        };
+        JTable tabla = new JTable(modelo);
+        configurarTabla(tabla);
+        JButton responder = crearBotonEstilizado("Ver conversación y responder", NARANJA);
+        JButton actualizar = crearBotonEstilizado("Actualizar", AZUL_SECUNDARIO);
+        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        acciones.setOpaque(false); acciones.add(responder); acciones.add(actualizar);
+        panel.add(PanelRolUI.crearListaFiltrable(tabla), BorderLayout.CENTER);
+        panel.add(acciones, BorderLayout.SOUTH);
+        actualizar.addActionListener(e -> cargarMensajesWeb(modelo));
+        responder.addActionListener(e -> {
+            int row = tabla.getSelectedRow();
+            if (row < 0) { JOptionPane.showMessageDialog(this, "Selecciona una conversación."); return; }
+            int modelRow = tabla.convertRowIndexToModel(row);
+            abrirConversacionWeb((Integer) modelo.getValueAt(modelRow, 0), modelo);
+        });
+        cargarMensajesWeb(modelo);
+        return panel;
+    }
+
+    private void cargarMensajesWeb(DefaultTableModel modelo) {
+        try {
+            modelo.setRowCount(0);
+            for (WebInboxDAO.Message m : webInboxDAO.messages()) {
+                if (!m.admin && m.replyTo == null) modelo.addRow(new Object[] {m.id, m.name, m.email, m.message, m.date});
+            }
+        } catch (SQLException ex) { mostrarError("No se pudieron cargar los mensajes web: " + ex.getMessage()); }
+    }
+
+    private void abrirConversacionWeb(int rootId, DefaultTableModel modelo) {
+        try {
+            StringBuilder transcript = new StringBuilder();
+            for (WebInboxDAO.Message m : webInboxDAO.messages()) {
+                if (m.id == rootId || (m.replyTo != null && m.replyTo == rootId)) {
+                    transcript.append(m.admin ? "\nEquipo Horizonte · " : "\n" + m.name + " · ").append(m.date)
+                            .append("\n").append(m.message).append("\n");
+                }
+            }
+            JTextArea history = new JTextArea(transcript.toString(), 14, 48);
+            history.setEditable(false); history.setLineWrap(true); history.setWrapStyleWord(true);
+            JTextArea reply = new JTextArea(4, 48); reply.setLineWrap(true); reply.setWrapStyleWord(true);
+            JPanel body = new JPanel(new BorderLayout(8, 8));
+            body.add(new JScrollPane(history), BorderLayout.CENTER);
+            body.add(new JScrollPane(reply), BorderLayout.SOUTH);
+            int choice = JOptionPane.showConfirmDialog(this, body, "Conversación web · Responder", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            if (choice == JOptionPane.OK_OPTION) {
+                String text = reply.getText().trim();
+                if (text.isEmpty()) { JOptionPane.showMessageDialog(this, "Escribe una respuesta antes de enviarla."); return; }
+                webInboxDAO.reply(text, rootId);
+                cargarMensajesWeb(modelo);
+                JOptionPane.showMessageDialog(this, "Respuesta enviada. El cliente la verá en el chat del sitio.");
+            }
+        } catch (SQLException ex) { mostrarError("No se pudo abrir la conversación: " + ex.getMessage()); }
+    }
+
+    private JPanel crearPanelSolicitudesWeb() {
+        JPanel panel = crearPanelBase("Solicitudes de eventos", "Revisa cada propuesta, responde al cliente y actualiza su seguimiento");
+        DefaultTableModel modelo = new DefaultTableModel(new Object[] {"ID", "Cliente", "Evento", "Fecha tentativa", "Invitados", "Estado", "Recibida"}, 0) {
+            private static final long serialVersionUID = 1L;
+            @Override public boolean isCellEditable(int fila, int columna) { return false; }
+        };
+        JTable tabla = new JTable(modelo); configurarTabla(tabla);
+        JButton atender = crearBotonEstilizado("Ver detalle y responder", NARANJA);
+        JButton actualizar = crearBotonEstilizado("Actualizar", AZUL_SECUNDARIO);
+        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        acciones.setOpaque(false); acciones.add(atender); acciones.add(actualizar);
+        panel.add(PanelRolUI.crearListaFiltrable(tabla), BorderLayout.CENTER); panel.add(acciones, BorderLayout.SOUTH);
+        actualizar.addActionListener(e -> cargarSolicitudesWeb(modelo));
+        atender.addActionListener(e -> {
+            int row=tabla.getSelectedRow(); if(row<0){JOptionPane.showMessageDialog(this,"Selecciona una solicitud.");return;}
+            int modelRow=tabla.convertRowIndexToModel(row); long id=((Number)modelo.getValueAt(modelRow,0)).longValue();
+            abrirSolicitudWeb(id, modelo);
+        });
+        cargarSolicitudesWeb(modelo);
+        return panel;
+    }
+
+    private void cargarSolicitudesWeb(DefaultTableModel modelo) {
+        try {
+            modelo.setRowCount(0);
+            for (WebInboxDAO.Request r : webInboxDAO.requests()) modelo.addRow(new Object[] {r.id,r.name,r.type,r.date,r.guests,r.status,r.created});
+        } catch (SQLException ex) { mostrarError("No se pudieron cargar las solicitudes: " + ex.getMessage()); }
+    }
+
+    private void abrirSolicitudWeb(long id, DefaultTableModel modelo) {
+        try {
+            WebInboxDAO.Request request = null;
+            for (WebInboxDAO.Request item : webInboxDAO.requests()) if (item.id == id) { request=item; break; }
+            if (request == null) { cargarSolicitudesWeb(modelo); return; }
+            JTextArea detail = new JTextArea("Cliente: " + request.name + "\nEmail: " + request.email + "\nTeléfono: " + request.phone
+                    + "\nEvento: " + request.type + "\nFecha: " + request.date + " · " + request.time
+                    + "\nInvitados: " + request.guests + "\nEspacio: " + request.space + "\nServicios: " + request.services
+                    + "\nComentarios: " + request.comments, 9, 44);
+            detail.setEditable(false); detail.setLineWrap(true); detail.setWrapStyleWord(true);
+            JComboBox<String> status = new JComboBox<>(new String[] {"Pendiente", "Contactado", "Aprobado", "Rechazado"}); status.setSelectedItem(request.status);
+            JTextArea response = new JTextArea(request.response == null ? "" : request.response, 5, 44); response.setLineWrap(true); response.setWrapStyleWord(true);
+            JPanel form = new JPanel(new BorderLayout(6,6)); form.add(new JScrollPane(detail),BorderLayout.NORTH);
+            JPanel answer = new JPanel(new BorderLayout(4,4)); answer.add(new JLabel("Estado de seguimiento"),BorderLayout.NORTH); answer.add(status,BorderLayout.CENTER);
+            answer.add(new JLabel("Respuesta para el cliente (visible en Mi cuenta)"),BorderLayout.SOUTH);
+            JPanel lower = new JPanel(new BorderLayout(5,5)); lower.add(answer,BorderLayout.NORTH); lower.add(new JScrollPane(response),BorderLayout.CENTER); form.add(lower,BorderLayout.CENTER);
+            if (JOptionPane.showConfirmDialog(this,form,"Solicitud web #"+id,JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE)==JOptionPane.OK_OPTION) {
+                webInboxDAO.answerRequest(id,(String)status.getSelectedItem(),response.getText().trim());
+                cargarSolicitudesWeb(modelo); JOptionPane.showMessageDialog(this,"Solicitud actualizada; el cliente verá la respuesta en su cuenta.");
+            }
+        } catch (SQLException ex) { mostrarError("No se pudo actualizar la solicitud: " + ex.getMessage()); }
     }
 
     private JPanel crearPanelBase(String titulo, String subtitulo) {
@@ -794,5 +914,9 @@ public class AdministracionFrame extends JFrame {
     private void mostrarError(SQLException ex) {
         JOptionPane.showMessageDialog(this, "Error de base de datos: " + ex.getMessage(),
                 "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void mostrarError(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
     }
 }

@@ -1,0 +1,5 @@
+db.host=pma.torga.com.ar
+db.port=3306
+db.name=s29_horizonte_eventos
+db.user=TU_USUARIO
+db.password=TU_CONTRASENA

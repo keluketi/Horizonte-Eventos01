@@ -5,9 +5,7 @@ namespace Horizonte\Controllers;
 
 use Horizonte\Core\Session;
 use Horizonte\Core\View;
-use Horizonte\Repositories\ChatRepository;
 use Horizonte\Repositories\SiteContentRepository;
-use Horizonte\Repositories\SubmissionRepository;
 
 final class AdminController
 {
@@ -21,21 +19,11 @@ final class AdminController
             return;
         }
 
-        (new ChatRepository())->ensureSchema();
         $siteContent = (new SiteContentRepository())->load();
-        $solicitudes = (new SubmissionRepository())->recent();
-        $chatRows = (new ChatRepository())->recentForAdmin();
         $events = is_array($siteContent['eventos'] ?? null) ? $siteContent['eventos'] : [];
-        $successText = [
-            'solicitud' => 'Solicitud actualizada.',
-            'contenido' => 'El contenido del sitio se actualizó.',
-            'chat' => 'La respuesta del chat se envió correctamente.',
-        ][(string) ($_GET['status'] ?? '')] ?? '';
-        $warningText = [
-            'estado' => 'No se pudo actualizar el estado.',
-            'mensaje' => 'No se pudo enviar la respuesta.',
-        ][(string) ($_GET['error'] ?? '')] ?? '';
+        $successText = (string) ($_GET['status'] ?? '') === 'contenido' ? 'El contenido del sitio se actualizó.' : '';
+        $warningText = '';
 
-        View::render('admin/dashboard', compact('siteContent', 'solicitudes', 'chatRows', 'events', 'successText', 'warningText'));
+        View::render('admin/dashboard', compact('siteContent', 'events', 'successText', 'warningText'));
     }
 }

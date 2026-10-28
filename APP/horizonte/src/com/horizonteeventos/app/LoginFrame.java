@@ -312,7 +312,14 @@ public class LoginFrame extends JFrame {
         public PanelImagen() {
             setOpaque(false);
             try {
-                imagen = ImageIO.read(new File("img/fondo.jpg"));
+                java.net.URL recurso = LoginFrame.class.getResource("/img/fondo.jpg");
+                if (recurso != null) {
+                    imagen = ImageIO.read(recurso);
+                } else {
+                    File archivo = new File("APP/horizonte/img/fondo.jpg");
+                    if (!archivo.isFile()) archivo = new File("img/fondo.jpg");
+                    if (archivo.isFile()) imagen = ImageIO.read(archivo);
+                }
             } catch (IOException e) {
                 imagen = null;
             }

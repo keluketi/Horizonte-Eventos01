@@ -41,6 +41,17 @@ final class SubmissionRepository
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
+    public function recentForClient(string $email): array
+    {
+        $connection = Database::connection();
+        $statement = $connection->prepare('SELECT id_solicitud, tipo_evento, fecha_tentativa, horario, invitados, estado, respuesta_admin, fecha_creacion FROM solicitudes_web WHERE email = ? ORDER BY fecha_creacion DESC LIMIT 20');
+        $statement->bind_param('s', $email);
+        $statement->execute();
+        $rows = $statement->get_result()->fetch_all(MYSQLI_ASSOC);
+        $statement->close();
+        return $rows;
+    }
+
     public function updateStatus(int $id, string $status): void
     {
         $connection = Database::connection();

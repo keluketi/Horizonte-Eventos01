@@ -8,7 +8,7 @@ if ($adminError !== ''): ?>
 </head>
 <body class="admin-page login-page">
   <div class="admin-login-box">
-    <p class="eyebrow">ADMINISTRACIÓN</p><h1>Panel de Horizonte Eventos</h1>
+    <p class="eyebrow">SUPERUSUARIO</p><h1>Configuración institucional</h1>
     <p class="login-error"><?= htmlspecialchars($adminError, ENT_QUOTES, 'UTF-8') ?></p>
     <form action="admin_actions.php" method="post" class="admin-login-form">
       <input type="hidden" name="action" value="login">
@@ -27,7 +27,7 @@ if ($adminError !== ''): ?>
 </head>
 <body class="admin-page login-page">
   <div class="admin-login-box">
-    <p class="eyebrow">ADMINISTRACIÓN</p><h1>Panel de Horizonte Eventos</h1>
+    <p class="eyebrow">SUPERUSUARIO</p><h1>Configuración institucional</h1>
     <form action="admin_actions.php" method="post" class="admin-login-form">
       <input type="hidden" name="action" value="login">
       <label for="admin-password">Contraseña</label><input id="admin-password" type="password" name="password" placeholder="Ingresá la contraseña" required>
